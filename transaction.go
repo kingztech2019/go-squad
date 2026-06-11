@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 )
 
 // TransactionService handles payment initiation, verification, and refunds.
@@ -19,6 +20,15 @@ func (s *TransactionService) InitiatePayment(ctx context.Context, params *Initia
 	var out InitiatePaymentResponse
 	if err := s.client.do(ctx, http.MethodPost, "/transaction/initiate", params, &out); err != nil {
 		return nil, err
+	}
+	// Squad does not return a checkout URL in the response body.
+	// Build it from the transaction ref and the active environment.
+	if out.TransactionRef != "" {
+		if strings.Contains(s.client.baseURL, "sandbox") {
+			out.CheckoutURL = "https://sandbox-pay.squadco.com/" + out.TransactionRef
+		} else {
+			out.CheckoutURL = "https://pay.squadco.com/" + out.TransactionRef
+		}
 	}
 	return &out, nil
 }

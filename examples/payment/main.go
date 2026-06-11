@@ -35,7 +35,7 @@ func main() {
 	}
 	fmt.Printf("Checkout URL: %s\n", resp.CheckoutURL)
 	fmt.Printf("Transaction Ref: %s\n", resp.TransactionRef)
-	fmt.Printf("Total Amount: %.2f NGN\n", resp.TotalAmount/100)
+	fmt.Printf("Amount: %.2f NGN\n", float64(resp.Amount)/100)
 
 	// Step 2: After the user completes payment, verify the transaction
 	fmt.Println("\nVerifying transaction...")
@@ -48,7 +48,7 @@ func main() {
 	}
 	fmt.Printf("Status: %s\n", txn.Status)
 	fmt.Printf("Amount: %d kobo\n", txn.Amount)
-	fmt.Printf("Customer: %s (%s)\n", txn.Customer.CustomerName, txn.Customer.CustomerEmail)
+	fmt.Printf("Customer: %s (%s)\n", txn.MerchantName, txn.Email)
 
 	// Step 3: Issue a partial refund (optional)
 	if txn.Status == "Success" {

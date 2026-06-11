@@ -21,10 +21,9 @@ func TestInitiatePayment_Success(t *testing.T) {
 			t.Error("missing Authorization header")
 		}
 		writeJSON(w, 200, "success", squad.InitiatePaymentResponse{
-			CheckoutURL:    "https://checkout.squadco.com/test123",
 			TransactionRef: "txn_test_001",
 			Currency:       "NGN",
-			TotalAmount:    500000,
+			Amount:         500000,
 		})
 	})
 	defer teardown()

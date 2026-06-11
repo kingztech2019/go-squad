@@ -27,13 +27,24 @@ type ChargeToken struct {
 
 // InitiatePaymentResponse is the Data payload returned by InitiatePayment.
 // Redirect the end-user to CheckoutURL to complete payment.
+// CheckoutURL is computed by the SDK from TransactionRef — Squad does not return it directly.
 type InitiatePaymentResponse struct {
-	CheckoutURL    string  `json:"checkout_url"`
-	MerchantAmount float64 `json:"merchant_amount"`
-	AppliedFee     float64 `json:"applied_fee"`
-	TotalAmount    float64 `json:"total_amount"`
-	Currency       string  `json:"currency"`
-	TransactionRef string  `json:"transaction_ref"`
+	// CheckoutURL is set by the SDK. Redirect the customer here to complete payment.
+	CheckoutURL string `json:"-"`
+
+	TransactionRef     string       `json:"transaction_ref"`
+	Amount             int64        `json:"transaction_amount"`
+	Currency           string       `json:"currency"`
+	CallbackURL        string       `json:"callback_url"`
+	IsRecurring        bool         `json:"is_recurring"`
+	AuthorizedChannels []string     `json:"authorized_channels"`
+	MerchantInfo       MerchantInfo `json:"merchant_info"`
+}
+
+// MerchantInfo contains basic merchant identity returned inside payment responses.
+type MerchantInfo struct {
+	MerchantName string `json:"merchant_name"`
+	MerchantID   string `json:"merchant_id"`
 }
 
 // CustomerInfo is embedded in transaction responses.
@@ -46,19 +57,21 @@ type CustomerInfo struct {
 
 // VerifyTransactionResponse is the Data payload returned by VerifyTransaction.
 type VerifyTransactionResponse struct {
-	TransactionRef   string         `json:"transaction_ref"`
-	Amount           int64          `json:"transaction_amount"`
-	Fee              float64        `json:"fee"`
-	SettlementAmount float64        `json:"settlement_amount"`
-	Status           string         `json:"transaction_status"`
-	Channel          string         `json:"channel"`
-	Currency         string         `json:"currency"`
-	Customer         CustomerInfo   `json:"customer_info"`
-	Meta             map[string]any `json:"meta,omitempty"`
-	IsRecurring      bool           `json:"is_recurring"`
-	ChargeToken      *ChargeToken   `json:"charge_token,omitempty"`
-	CreatedAt        string         `json:"created_at"`
-	UpdatedAt        string         `json:"updated_at"`
+	TransactionRef      string         `json:"transaction_ref"`
+	Amount              int64          `json:"transaction_amount"`
+	Fee                 float64        `json:"fee"`
+	MerchantAmount      int64          `json:"merchant_amount"`
+	Status              string         `json:"transaction_status"`
+	Currency            string         `json:"transaction_currency_id"`
+	Email               string         `json:"email"`
+	TransactionType     string         `json:"transaction_type"`
+	MerchantName        string         `json:"merchant_name"`
+	MerchantEmail       string         `json:"merchant_email"`
+	Meta                map[string]any `json:"meta,omitempty"`
+	IsRecurring         bool           `json:"is_recurring"`
+	ChargeToken         *ChargeToken   `json:"charge_token,omitempty"`
+	CreatedAt           string         `json:"created_at"`
+	UpdatedAt           string         `json:"updated_at"`
 }
 
 // RefundTransactionParams holds parameters for initiating a transaction refund.
