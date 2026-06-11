@@ -1,0 +1,42 @@
+version: "2"
+
+linters:
+  enable:
+    - errcheck
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+    - misspell
+    - godot
+    - revive
+    - noctx
+    - bodyclose
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+
+linters-settings:
+  revive:
+    rules:
+      - name: exported
+        arguments:
+          - "checkPrivateReceivers"
+          - "sayRepetitiveInsteadOfStutters"
+  godot:
+    scope: toplevel
+    capital: true
+
+issues:
+  exclude-rules:
+    - path: "_test\\.go"
+      linters:
+        - errcheck
+        - noctx
+        - revive
+    - path: "examples/"
+      linters:
+        - errcheck
+        - revive
