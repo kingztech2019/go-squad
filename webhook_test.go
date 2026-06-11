@@ -20,7 +20,8 @@ func signPayload(payload []byte, secret string) string {
 }
 
 func TestParseWebhook_ValidSignature(t *testing.T) {
-	payload := []byte(`{"event":"charge.success","body":{"transaction_ref":"txn_001","amount":500000,"currency":"NGN","transaction_status":"Success","channel":"card","customer_email":"user@example.com","customer_name":"John Doe","gateway_ref":"gw_001","is_recurring":false,"created_at":"2026-01-01T00:00:00Z"}}`)
+	// PascalCase top-level keys, snake_case body keys — matches Squad's actual format.
+	payload := []byte(`{"Event":"charge_successful","TransactionRef":"txn_001","Body":{"transaction_ref":"txn_001","amount":500000,"currency":"NGN","transaction_status":"Success","transaction_type":"Card","email":"user@example.com","gateway_ref":"gw_001","is_recurring":false,"created_at":"2026-01-01T00:00:00Z"}}`)
 	sig := signPayload(payload, testWebhookSecret)
 
 	event, err := squad.ParseWebhook(payload, sig, testWebhookSecret)
@@ -28,12 +29,24 @@ func TestParseWebhook_ValidSignature(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 	if event.Event != squad.EventTransactionSuccess {
-		t.Errorf("expected charge.success, got %s", event.Event)
+		t.Errorf("expected charge_successful, got %s", event.Event)
+	}
+}
+
+func TestParseWebhook_EmptySignature_Sandbox(t *testing.T) {
+	// Squad sandbox does not send a signature — ParseWebhook must accept empty sig.
+	payload := []byte(`{"Event":"charge_successful","TransactionRef":"txn_001","Body":{}}`)
+	event, err := squad.ParseWebhook(payload, "", testWebhookSecret)
+	if err != nil {
+		t.Fatalf("unexpected error with empty signature (sandbox mode): %v", err)
+	}
+	if event.Event != squad.EventTransactionSuccess {
+		t.Errorf("expected charge_successful, got %s", event.Event)
 	}
 }
 
 func TestParseWebhook_InvalidSignature(t *testing.T) {
-	payload := []byte(`{"event":"charge.success","body":{}}`)
+	payload := []byte(`{"Event":"charge_successful","Body":{}}`)
 	_, err := squad.ParseWebhook(payload, "invalid_signature", testWebhookSecret)
 	if err == nil {
 		t.Fatal("expected error for invalid signature")
@@ -44,10 +57,10 @@ func TestParseWebhook_InvalidSignature(t *testing.T) {
 }
 
 func TestParseWebhook_TamperedPayload(t *testing.T) {
-	original := []byte(`{"event":"charge.success","body":{"amount":500000}}`)
+	original := []byte(`{"Event":"charge_successful","Body":{"amount":500000}}`)
 	sig := signPayload(original, testWebhookSecret)
 
-	tampered := []byte(`{"event":"charge.success","body":{"amount":9999999}}`)
+	tampered := []byte(`{"Event":"charge_successful","Body":{"amount":9999999}}`)
 	_, err := squad.ParseWebhook(tampered, sig, testWebhookSecret)
 	if !errors.Is(err, squad.ErrInvalidSignature) {
 		t.Errorf("expected ErrInvalidSignature for tampered payload, got %v", err)
@@ -181,7 +194,7 @@ func TestWebhookEvent_ParseBody_Dispute(t *testing.T) {
 
 func TestWebhookEvent_ParseBody_UnknownEvent(t *testing.T) {
 	event := &squad.WebhookEvent{
-		Event: "unknown.future.event",
+		Event: "unknown_future_event",
 		Body:  []byte(`{"foo":"bar"}`),
 	}
 	parsed, err := event.ParseBody()

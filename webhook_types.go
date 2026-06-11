@@ -9,22 +9,25 @@ import (
 type EventType string
 
 // Squad webhook event type constants.
+// Squad uses snake_case with underscores (confirmed from live sandbox payloads).
 const (
-	EventTransactionSuccess   EventType = "charge.success"
-	EventTransactionFailed    EventType = "charge.failed"
-	EventVirtualAccountCredit EventType = "virtual-account.credit"
-	EventTransferSuccess      EventType = "transfer.success"
-	EventTransferFailed       EventType = "transfer.failed"
-	EventTransferReversed     EventType = "transfer.reversed"
-	EventDisputeOpened        EventType = "dispute.opened"
-	EventDisputeResolved      EventType = "dispute.resolved"
+	EventTransactionSuccess   EventType = "charge_successful"
+	EventTransactionFailed    EventType = "charge_failed"
+	EventVirtualAccountCredit EventType = "virtualaccount_credited"
+	EventTransferSuccess      EventType = "transfer_successful"
+	EventTransferFailed       EventType = "transfer_failed"
+	EventTransferReversed     EventType = "transfer_reversed"
+	EventDisputeOpened        EventType = "dispute_opened"
+	EventDisputeResolved      EventType = "dispute_resolved"
 )
 
 // WebhookEvent is the top-level structure of all Squad webhook payloads.
+// Squad uses PascalCase field names at the top level.
 // Use event.Event to determine the event type, then call ParseBody() to decode the body.
 type WebhookEvent struct {
-	Event EventType       `json:"event"`
-	Body  json.RawMessage `json:"body"`
+	Event          EventType       `json:"Event"`
+	TransactionRef string          `json:"TransactionRef"`
+	Body           json.RawMessage `json:"Body"`
 }
 
 // ParseBody decodes the Body field into the appropriate typed struct based on Event.
@@ -69,23 +72,25 @@ func (e *WebhookEvent) ParseBody() (any, error) {
 	}
 }
 
-// WebhookTransactionBody holds the body payload for charge.success and charge.failed events.
+// WebhookTransactionBody holds the body payload for charge_successful and charge_failed events.
 type WebhookTransactionBody struct {
 	TransactionRef string         `json:"transaction_ref"`
+	GatewayRef     string         `json:"gateway_ref"`
 	Amount         int64          `json:"amount"`
+	MerchantAmount int64          `json:"merchant_amount"`
 	Currency       string         `json:"currency"`
 	Status         string         `json:"transaction_status"`
-	Channel        string         `json:"channel"`
-	CustomerEmail  string         `json:"customer_email"`
-	CustomerName   string         `json:"customer_name"`
+	Channel        string         `json:"transaction_type"` // "Card", "Bank", "Ussd", "MerchantUssd"
+	Email          string         `json:"email"`
+	CustomerName   string         `json:"customer_name,omitempty"`
+	MerchantID     string         `json:"merchant_id"`
 	Meta           map[string]any `json:"meta,omitempty"`
-	GatewayRef     string         `json:"gateway_ref"`
 	IsRecurring    bool           `json:"is_recurring"`
 	ChargeToken    *ChargeToken   `json:"charge_token,omitempty"`
 	CreatedAt      string         `json:"created_at"`
 }
 
-// WebhookVirtualAccountBody holds the body payload for virtual-account.credit events.
+// WebhookVirtualAccountBody holds the body payload for virtualaccount_credited events.
 type WebhookVirtualAccountBody struct {
 	VirtualAccountNumber string `json:"virtual_account_number"`
 	Amount               int64  `json:"amount"`

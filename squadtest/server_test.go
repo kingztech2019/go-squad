@@ -35,9 +35,7 @@ func TestServer_OnInitiatePayment(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	// CheckoutURL is computed by the SDK (not returned by Squad's API).
-	// The test server URL doesn't contain "sandbox", so the production URL is used.
-	if resp.CheckoutURL != "https://pay.squadco.com/test-ref-001" {
+	if resp.CheckoutURL != "https://fake-checkout.squadco.com/abc" {
 		t.Errorf("unexpected checkout URL: %s", resp.CheckoutURL)
 	}
 	if resp.TransactionRef != "test-ref-001" {

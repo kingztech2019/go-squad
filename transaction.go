@@ -14,16 +14,24 @@ type TransactionService struct {
 	client *Client
 }
 
+// initiatePaymentRequest wraps InitiatePaymentParams to inject the required
+// initiate_type field that Squad mandates on every payment initiation call.
+type initiatePaymentRequest struct {
+	*InitiatePaymentParams
+	InitiateType string `json:"initiate_type"`
+}
+
 // InitiatePayment creates a new payment transaction and returns a checkout URL.
 // Redirect the end-user to Response.CheckoutURL to complete payment via the Squad modal.
 func (s *TransactionService) InitiatePayment(ctx context.Context, params *InitiatePaymentParams) (*InitiatePaymentResponse, error) {
+	req := &initiatePaymentRequest{InitiatePaymentParams: params, InitiateType: "inline"}
 	var out InitiatePaymentResponse
-	if err := s.client.do(ctx, http.MethodPost, "/transaction/initiate", params, &out); err != nil {
+	if err := s.client.do(ctx, http.MethodPost, "/transaction/initiate", req, &out); err != nil {
 		return nil, err
 	}
-	// Squad does not return a checkout URL in the response body.
-	// Build it from the transaction ref and the active environment.
-	if out.TransactionRef != "" {
+	// Squad returns checkout_url when initiate_type is set.
+	// Build it from transaction_ref as a fallback if it is absent.
+	if out.CheckoutURL == "" && out.TransactionRef != "" {
 		if strings.Contains(s.client.baseURL, "sandbox") {
 			out.CheckoutURL = "https://sandbox-pay.squadco.com/" + out.TransactionRef
 		} else {

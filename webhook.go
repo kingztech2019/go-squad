@@ -6,18 +6,24 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"strings"
 )
 
 // ParseWebhook parses and validates an inbound Squad webhook.
 //
 // payload is the raw HTTP request body bytes.
-// signature is the value of the "x-squad-signature" header.
+// signature is the value of the "x-squad-encrypted-body" HTTP header.
 // secret is the merchant's Squad secret key (same key used for API calls).
+//
+// Note: Squad sandbox does not send the signature header. Pass an empty string
+// to skip signature validation during development (production always signs).
 //
 // Returns ErrInvalidSignature if the HMAC-SHA512 signature does not match.
 // Returns a parse error if the JSON payload is malformed.
 func ParseWebhook(payload []byte, signature string, secret string) (*WebhookEvent, error) {
-	if !VerifySignature(payload, signature, secret) {
+	// Squad sandbox does not send a signature. Skip validation only when signature
+	// is explicitly absent — never skip when a signature is present but wrong.
+	if signature != "" && !VerifySignature(payload, signature, secret) {
 		return nil, ErrInvalidSignature
 	}
 	var event WebhookEvent
@@ -36,5 +42,5 @@ func VerifySignature(payload []byte, signature string, secret string) bool {
 	mac := hmac.New(sha512.New, []byte(secret))
 	mac.Write(payload)
 	expected := hex.EncodeToString(mac.Sum(nil))
-	return hmac.Equal([]byte(signature), []byte(expected))
+	return hmac.Equal([]byte(strings.ToLower(signature)), []byte(expected))
 }

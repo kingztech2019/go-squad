@@ -27,10 +27,10 @@ type ChargeToken struct {
 
 // InitiatePaymentResponse is the Data payload returned by InitiatePayment.
 // Redirect the end-user to CheckoutURL to complete payment.
-// CheckoutURL is computed by the SDK from TransactionRef — Squad does not return it directly.
 type InitiatePaymentResponse struct {
-	// CheckoutURL is set by the SDK. Redirect the customer here to complete payment.
-	CheckoutURL string `json:"-"`
+	// CheckoutURL is returned by Squad when initiate_type is "inline".
+	// The SDK builds it from TransactionRef as a fallback if Squad omits it.
+	CheckoutURL string `json:"checkout_url"`
 
 	TransactionRef     string       `json:"transaction_ref"`
 	Amount             int64        `json:"transaction_amount"`

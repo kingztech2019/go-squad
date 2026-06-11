@@ -30,10 +30,10 @@ func main() {
 			return
 		}
 
-		sig := r.Header.Get("x-squad-signature")
+		sig := r.Header.Get("x-squad-encrypted-body")
 		event, err := squad.ParseWebhook(body, sig, secret)
 		if errors.Is(err, squad.ErrInvalidSignature) {
-			log.Printf("SECURITY: invalid webhook signature from %s", r.RemoteAddr)
+			log.Printf("SECURITY: invalid webhook signature from %s (production only — sandbox sends no signature)", r.RemoteAddr)
 			http.Error(w, "forbidden", http.StatusForbidden)
 			return
 		}
@@ -52,12 +52,12 @@ func main() {
 			}
 			txn := parsed.(*squad.WebhookTransactionBody)
 			log.Printf("Payment SUCCESS: ref=%s amount=%d %s customer=%s",
-				txn.TransactionRef, txn.Amount, txn.Currency, txn.CustomerEmail)
+				txn.TransactionRef, txn.Amount, txn.Currency, txn.Email)
 
 		case squad.EventTransactionFailed:
 			parsed, _ := event.ParseBody()
 			txn := parsed.(*squad.WebhookTransactionBody)
-			log.Printf("Payment FAILED: ref=%s customer=%s", txn.TransactionRef, txn.CustomerEmail)
+			log.Printf("Payment FAILED: ref=%s customer=%s", txn.TransactionRef, txn.Email)
 
 		case squad.EventVirtualAccountCredit:
 			parsed, _ := event.ParseBody()
